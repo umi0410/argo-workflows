@@ -117,7 +117,7 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer, secretInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -163,6 +163,33 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 					inParam.Value = wfv1.AnyStringPtr(cmValue)
 				}
 			}
+		} else if inParam.ValueFrom != nil && inParam.ValueFrom.SecretKeyRef != nil {
+			if secretInformer != nil {
+				// SubstituteParams is called only at the end of this method. To support parametrization of the secret
+				// we need to perform a substitution here over the name and the key of the SecretKeyRef.
+				secretName, err := substituteSecretKeyRefParam(inParam.ValueFrom.SecretKeyRef.Name, globalParams)
+				if err != nil {
+					log.WithError(err).Error("unable to substitute name for SecretKeyRef")
+					return nil, err
+				}
+				secretKey, err := substituteSecretKeyRefParam(inParam.ValueFrom.SecretKeyRef.Key, globalParams)
+				if err != nil {
+					log.WithError(err).Error("unable to substitute key for SecretKeyRef")
+					return nil, err
+				}
+
+				secretValue, err := GetSecretValue(secretInformer, namespace, secretName, secretKey)
+				if err != nil {
+					if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
+						inParam.Value = inParam.ValueFrom.Default
+					} else {
+						return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from Secret: %s", inParam.Name, err)
+					}
+				} else {
+					inParam.Value = wfv1.AnyStringPtr(secretValue)
+				}
+			}
+			aaaaaaaaaaaaaaaa a a a aaaaaaa
 		} else {
 			if inParam.Value == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
@@ -215,6 +242,23 @@ func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string,
 	return in, nil
 }
 
+// substituteSecretKeyRefParam check if SecretKeyRef's key is a param and perform the substitution.
+func substituteSecretKeyRefParam(in string, globalParams Parameters) (string, error) {
+	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
+		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
+		k = strings.Trim(k, " ")
+
+		v, ok := globalParams[k]
+		if !ok {
+			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
+			log.WithError(err).Error()
+			return "", err
+		}
+		return v, nil
+	}
+	return in, nil
+}
+
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
 func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
@@ -223,6 +267,8 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
+	log.Warnf("JINSU::SubstituteParams:replaceMap:%v", replaceMap)
+	log.Warnf("JINSU::SubstituteParams:tmpl:%+v", tmpl)
 	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
