@@ -62,7 +62,7 @@ spec:
       watch: cmd/argo config errors persist pkg util server workflow
       mutex: build
     - name: server
-      command: ./dist/argo server
+      command: ./dist/argo server --auth-mode sso
       dependencies: build-argo port-forward
       env:
         - ARGO_X_FRAME_OPTIONS=SAMEORIGIN
@@ -70,7 +70,7 @@ spec:
         - ARGO_NAMESPACE=argo
         - ARGO_NAMESPACED=true
         - ARGO_LOG_LEVEL=info
-        - ARGO_AUTH_MODE=hybrid
+        # - ARGO_AUTH_MODE=hybrid
         - ARGO_MANAGED_NAMESPACE=argo
         - UPPERIO_DB_DEBUG=1
       ports: "2746"

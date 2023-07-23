@@ -21,3 +21,37 @@ data:
     completed: 10
     failed: 2
     errored: 2
+  sso: |
+    # -- The root URL of the OIDC identity provider
+    issuer: http://keycloak-http.keycloak/auth/realms/ossca
+    clientId:
+      # -- Name of secret to retrieve the app OIDC client ID
+      name: argo-workflows-sso
+      # -- Key of secret to retrieve the app OIDC client ID
+      key: clientId
+    clientSecret:
+      # -- Name of a secret to retrieve the app OIDC client secret
+      name: argo-workflows-sso
+      # -- Key of a secret to retrieve the app OIDC client secret
+      key: clientSecret
+    # - The OIDC redirect URL. Should be in the form <argo-root-url>/oauth2/callback.
+    redirectUrl: http://localhost:8080/oauth2/callback
+    rbac:
+      # -- Adds ServiceAccount Policy to server (Cluster)Role.
+      enabled: true
+    # -- Scopes requested from the SSO ID provider
+    ## The 'groups' scope requests group membership information, which is usually used for authorization decisions.
+    scopes: ['groups']
+      # - groups
+    # -- Define how long your login is valid for (in hours)
+    ## If omitted, defaults to 10h.
+    sessionExpiry: "10h"
+    # -- Alternate root URLs that can be included for some OIDC providers
+    issuerAlias: ""
+    # -- Override claim name for OIDC groups
+    customGroupClaimName: ""
+    # -- Specify the user info endpoint that contains the groups claim
+    ## Configure this if your OIDC provider provides groups information only using the user-info endpoint (e.g. Okta)
+    #userInfoPath: "http://keycloak-http.keycloak/auth/realms/ossca/protocol/openid-connect/userinfo"
+    # -- Skip TLS verification for the HTTP client
+    insecureSkipVerify: true
