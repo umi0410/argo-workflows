@@ -388,6 +388,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 
 		processedTmpl, err := common.ProcessArgs(tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer, woc.controller.secretInformer)
+		log.Warnf("JINSU::executeDAGTask:error:", err)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
 		}

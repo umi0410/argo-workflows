@@ -189,7 +189,6 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 					inParam.Value = wfv1.AnyStringPtr(secretValue)
 				}
 			}
-			aaaaaaaaaaaaaaaa a a a aaaaaaa
 		} else {
 			if inParam.Value == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)

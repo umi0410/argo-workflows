@@ -367,6 +367,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			localParams[common.LocalVarPodName] = pod.Name
 		}
 		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer, woc.controller.secretInformer)
+		log.Warnf("JINSU::createWorkflowPod:error:", err)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}

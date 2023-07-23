@@ -1806,9 +1806,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
-	log.Warnf("JINSU::executeTemplate:%+v", woc.globalParams)
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer, woc.controller.secretInformer)
+	log.Warnf("JINSU::executeTemplate:error:", err)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
